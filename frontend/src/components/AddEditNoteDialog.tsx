@@ -3,12 +3,15 @@ import { Note as NoteModel } from "../models/notes";
 import { useForm } from "react-hook-form";
 import * as NoteApi from "../network/notes_api";
 
-interface AddNoteDialogProps {
+interface AddEditNoteDialogProps {
   onDismiss: () => void;
   onNoteSaved: (note: NoteModel) => void;
 }
 
-const AddNoteDialog = ({ onDismiss, onNoteSaved }: AddNoteDialogProps) => {
+const AddEditNoteDialog = ({
+  onDismiss,
+  onNoteSaved,
+}: AddEditNoteDialogProps) => {
   const {
     register,
     handleSubmit,
@@ -66,4 +69,4 @@ const AddNoteDialog = ({ onDismiss, onNoteSaved }: AddNoteDialogProps) => {
   );
 };
 
-export default AddNoteDialog;
+export default AddEditNoteDialog;

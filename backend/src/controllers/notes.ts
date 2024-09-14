@@ -121,7 +121,7 @@ export const deleteNote: RequestHandler = async (req, res, next) => {
       throw createHttpError(404, "Note not found");
     }
 
-    await note.deleteOne({ _id: noteId }).exec();
+    await note.deleteOne();
 
     res.sendStatus(204);
   } catch (error) {
