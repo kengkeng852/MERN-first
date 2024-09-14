@@ -4,11 +4,13 @@ import { useForm } from "react-hook-form";
 import * as NoteApi from "../network/notes_api";
 
 interface AddEditNoteDialogProps {
+  noteToEdit?: NoteModel;
   onDismiss: () => void;
   onNoteSaved: (note: NoteModel) => void;
 }
 
 const AddEditNoteDialog = ({
+  noteToEdit,
   onDismiss,
   onNoteSaved,
 }: AddEditNoteDialogProps) => {
@@ -16,11 +18,22 @@ const AddEditNoteDialog = ({
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<NoteApi.NoteInput>();
+  } = useForm<NoteApi.NoteInput>({
+    defaultValues: {
+      title: noteToEdit?.title || "",
+      text: noteToEdit?.text || "",
+    },
+  });
 
   async function onSubmitNote(input: NoteApi.NoteInput) {
     try {
-      const noteResponse = await NoteApi.createNote(input);
+      let noteResponse: NoteModel;
+      if (noteToEdit) {
+        noteResponse = await NoteApi.updateNote(noteToEdit._id, input);
+      } else {
+        noteResponse = await NoteApi.createNote(input);
+      }
+
       onNoteSaved(noteResponse);
     } catch (error) {
       console.error("Error creating note:", error);
@@ -31,11 +44,11 @@ const AddEditNoteDialog = ({
   return (
     <Modal show onHide={onDismiss}>
       <Modal.Header closeButton>
-        <Modal.Title>Add Note</Modal.Title>
+        <Modal.Title>{noteToEdit ? "Edit note" : "Add note"}</Modal.Title>
       </Modal.Header>
 
       <Modal.Body>
-        <Form id="addNoteForm" onSubmit={handleSubmit(onSubmitNote)}>
+        <Form id="addEditNoteForm" onSubmit={handleSubmit(onSubmitNote)}>
           <Form.Group className="mb-3">
             <Form.Label>Title</Form.Label>
             <Form.Control
@@ -61,7 +74,7 @@ const AddEditNoteDialog = ({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button type="submit" form="addNoteForm" disabled={isSubmitting}>
+        <Button type="submit" form="addEditNoteForm" disabled={isSubmitting}>
           Save
         </Button>
       </Modal.Footer>

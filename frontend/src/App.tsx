@@ -1,26 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { Note as NoteModel } from "./models/notes";
 import Note from "./components/Note";
-import { Button, Col, Container, Row } from "react-bootstrap";
+import { Button, Col, Container, Row, Spinner } from "react-bootstrap";
 import styles from "./styles/notePage.module.css";
 import stylesUtils from "./styles/utils.module.css";
 import * as NoteApi from "./network/notes_api";
-import AddNoteDialog from "./components/AddEditNoteDialog";
+import AddEditNoteDialog from "./components/AddEditNoteDialog";
 import { FaPlus } from "react-icons/fa";
 
 function App() {
   const [notes, setNotes] = useState<NoteModel[]>([]);
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [showNotesLoadingError, setShowNotesLoadingError] = useState(false);
 
   const [showAddNoteDialog, setShowAddNoteDialog] = useState(false); //to set it to show modal or not
+  const [noteToEdit, setNoteToEdit] = useState<NoteModel | null>(null);
 
   useEffect(() => {
     async function loadNotes() {
       try {
+        setShowNotesLoadingError(false);
+        setNotesLoading(true);
         const notesRes = await NoteApi.fetchNotes();
         setNotes(notesRes);
       } catch (error) {
         console.error("Error fetching notes:", error);
-        alert(error);
+        setShowNotesLoadingError(true);
+      } finally {
+        setNotesLoading(false);
       }
     }
 
@@ -38,7 +45,7 @@ function App() {
   }
 
   return (
-    <Container>
+    <Container className={styles.notesPage}>
       <Button
         className={`mb-4 mt-2 ${stylesUtils.blockCenter} ${stylesUtils.flexCenter}`}
         onClick={() => setShowAddNoteDialog(true)}
@@ -46,24 +53,54 @@ function App() {
         <FaPlus />
         Add new note
       </Button>
-      <Row xs={1} md={2} xl={3} className="g-4">
-        {notes.map((note) => (
-          <Col key={note._id}>
-            <Note
-              note={note}
-              key={note._id}
-              className={styles.note}
-              onDeleteNoteClicked={deleteNote}
-            />
-          </Col>
-        ))}
-      </Row>
+      {notesLoading && <Spinner animation="border" variant="primary" />}
+      {showNotesLoadingError && (
+        <p>Something went wrong. Please refresh the page </p>
+      )}
+      {!notesLoading && !showNotesLoadingError && (
+        <>
+          {/* show notes in gird*/}
+          {notes.length > 0 ? (
+            <Row xs={1} md={2} xl={3} className={`g-4 ${styles.notesGrid}`}>
+              {notes.map((note) => (
+                <Col key={note._id}>
+                  <Note
+                    note={note}
+                    className={styles.note}
+                    onDeleteNoteClicked={deleteNote}
+                    onNoteClicked={setNoteToEdit}
+                  />
+                </Col>
+              ))}
+            </Row>
+          ) : (
+            <p>No notes available. Add a new note to get started!</p>
+          )}
+        </>
+      )}
+
       {showAddNoteDialog && (
-        <AddNoteDialog
+        <AddEditNoteDialog
           onDismiss={() => setShowAddNoteDialog(false)}
           onNoteSaved={(newNote) => {
             setNotes([...notes, newNote]); //to add new note to existing notes list. newNote is argument for note in onNoteSaved: (note: NoteModel)
             setShowAddNoteDialog(false);
+          }}
+        />
+      )}
+      {noteToEdit && (
+        <AddEditNoteDialog
+          noteToEdit={noteToEdit}
+          onDismiss={() => setNoteToEdit(null)}
+          onNoteSaved={(updatedNote) => {
+            setNotes(
+              notes.map((existingNote) =>
+                existingNote._id === updatedNote._id
+                  ? updatedNote
+                  : existingNote
+              )
+            ); //if the note is the one we edited, we replace it with the updated note
+            setNoteToEdit(null);
           }}
         />
       )}
