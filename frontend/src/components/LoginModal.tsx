@@ -1,16 +1,20 @@
 import { useForm } from "react-hook-form";
 import { User } from "../models/user";
 import { login, LoginCredentials } from "../network/notes_api";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Alert, Button, Form, Modal } from "react-bootstrap";
 import TextInputField from "./form/TextInputField";
 import styleUtils from "../styles/utils.module.css";
+import { useState } from "react";
+import { UnauthorizedError } from "../errors/http_error";
 
 interface loginModelProps {
   onDismiss: () => void; //for closing the modal
-  onloginSuccessful: (User: User) => void; //for updating the UI
+  onLoginSuccessful: (User: User) => void; //for updating the UI
 }
 
-const LoginModal = ({ onDismiss, onloginSuccessful }: loginModelProps) => {
+const LoginModal = ({ onDismiss, onLoginSuccessful }: loginModelProps) => {
+  const [errorText, setErrorText] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -20,10 +24,14 @@ const LoginModal = ({ onDismiss, onloginSuccessful }: loginModelProps) => {
   async function onSubmit(credentials: LoginCredentials) {
     try {
       const newUser = await login(credentials);
-      onloginSuccessful(newUser);
+      onLoginSuccessful(newUser);
     } catch (error) {
-      alert(error);
-      console.error("Error signing up:", error);
+      if (error instanceof UnauthorizedError) {
+        setErrorText("Invalid username or password");
+      } else {
+        alert(error);
+        console.error("Error signing in:", error);
+      }
     }
   }
 
@@ -34,6 +42,7 @@ const LoginModal = ({ onDismiss, onloginSuccessful }: loginModelProps) => {
       </Modal.Header>
 
       <Modal.Body>
+        {errorText && <Alert variant="danger">{errorText}</Alert>}
         <Form id="loginForm" onSubmit={handleSubmit(onSubmit)}>
           <TextInputField
             name="username"

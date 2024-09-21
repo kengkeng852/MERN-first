@@ -5,8 +5,8 @@ import Note from "./Note";
 import AddEditNoteDialog from "./AddEditNoteDialog";
 import { useEffect, useState } from "react";
 import * as NoteApi from "../network/notes_api";
-import styles from "./styles/notePage.module.css";
-import stylesUtils from "./styles/utils.module.css";
+import styles from "../styles/notePage.module.css";
+import stylesUtils from "../styles/utils.module.css";
 
 const NotesPageLoggedInView = () => {
   const [notes, setNotes] = useState<NoteModel[]>([]);

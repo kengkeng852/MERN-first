@@ -3,20 +3,16 @@ import createHttpError from "http-errors";
 import UserModel from "../models/user";
 import bcrypt from "bcrypt";
 
-export const getAuthenticatedUser: RequestHandler = async (req, res, next) => { 
-    const authenticatedUserId= req.session.userId;
-    //to check if user is authenticated or not
-    try {
-        if(!authenticatedUserId){
-            throw createHttpError(401, "Unauthorized");
-        }
-
-        const user = await UserModel.findById(authenticatedUserId).select("+email").exec();
-        res.status(200).json(user);
-    }catch(error) {
-        next(error);
-    }
-} 
+export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
+  try {
+    const user = await UserModel.findById(req.session.userId)
+      .select("+email")
+      .exec();
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getUsers: RequestHandler = async (req, res, next) => {
   try {
@@ -48,7 +44,9 @@ export const signUpUser: RequestHandler<
       throw createHttpError(400, "Missing required fields");
     }
 
-    const existingUsername = await UserModel.findOne({username: newusername }).exec(); //to check if username already exists
+    const existingUsername = await UserModel.findOne({
+      username: newusername,
+    }).exec(); //to check if username already exists
 
     if (existingUsername) {
       throw createHttpError(409, "Username already exists");
@@ -81,41 +79,46 @@ interface LoginBody {
   password?: string;
 }
 
-export const loginUser: RequestHandler<unknown, unknown, LoginBody, unknown> =async (req,res,next) => {
-    const username = req.body.username;
-    const password = req.body.password;
+export const loginUser: RequestHandler<
+  unknown,
+  unknown,
+  LoginBody,
+  unknown
+> = async (req, res, next) => {
+  const username = req.body.username;
+  const password = req.body.password;
 
-    try {
-        if (!username ||!password) {
-            throw createHttpError(400, "Missing required fields");
-        }
-
-        const user = await UserModel.findOne({username: username}).select("+password +email").exec();
-
-        if(!user) {
-            throw createHttpError(401, "Invalid credentials");
-        }
-
-        const isPasswordMatch = await bcrypt.compare(password, user.password); //take given raw password and compare with hashed password
-
-        if(!isPasswordMatch) {
-            throw createHttpError(401, "Invalid credentials");
-        }
-
-        req.session.userId = user._id;
-        res.status(201).json(user);
-    } catch (error) {
-        next(error);
+  try {
+    if (!username || !password) {
+      throw createHttpError(400, "Missing required fields");
     }
-}
 
-export const logoutUser: RequestHandler =  (req, res, next) => {
-    req.session.destroy((err) => {
-        if(err) {
-            next(err);
-        }
-        res.status(200).json({message: "Logged out successfully"});
-    });
-}
+    const user = await UserModel.findOne({ username: username })
+      .select("+password +email")
+      .exec();
 
+    if (!user) {
+      throw createHttpError(401, "Invalid credentials");
+    }
 
+    const isPasswordMatch = await bcrypt.compare(password, user.password); //take given raw password and compare with hashed password
+
+    if (!isPasswordMatch) {
+      throw createHttpError(401, "Invalid credentials");
+    }
+
+    req.session.userId = user._id;
+    res.status(201).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logoutUser: RequestHandler = (req, res, next) => {
+  req.session.destroy((err) => {
+    if (err) {
+      next(err);
+    }
+    res.status(200).json({ message: "Logged out successfully" });
+  });
+};
